@@ -1584,6 +1584,8 @@ class _BoardState:
         board.halfmove_clock = self.halfmove_clock
         board.fullmove_number = self.fullmove_number
 
+#from  numba.experimental import jitclass 
+#@jitclass 
 class Board(BaseBoard):
     """
     A :class:`~chess.BaseBoard`, additional information representing
@@ -1615,22 +1617,22 @@ class Board(BaseBoard):
         Use :func:`~chess.Board.is_valid()` to detect invalid positions.
     """
 
-    aliases: ClassVar[List[str]] = ["Standard", "Chess", "Classical", "Normal", "Illegal", "From Position"]
-    uci_variant: ClassVar[Optional[str]] = "chess"
-    xboard_variant: ClassVar[Optional[str]] = "normal"
-    starting_fen: ClassVar[str] = STARTING_FEN
+    aliases: List[str] = ["Standard", "Chess", "Classical", "Normal", "Illegal", "From Position"]
+    uci_variant: Optional[str] = "chess"
+    xboard_variant: Optional[str] = "normal"
+    starting_fen: str = STARTING_FEN
 
-    tbw_suffix: ClassVar[Optional[str]] = ".rtbw"
-    tbz_suffix: ClassVar[Optional[str]] = ".rtbz"
-    tbw_magic: ClassVar[Optional[bytes]] = b"\x71\xe8\x23\x5d"
-    tbz_magic: ClassVar[Optional[bytes]] = b"\xd7\x66\x0c\xa5"
-    pawnless_tbw_suffix: ClassVar[Optional[str]] = None
-    pawnless_tbz_suffix: ClassVar[Optional[str]] = None
-    pawnless_tbw_magic: ClassVar[Optional[bytes]] = None
-    pawnless_tbz_magic: ClassVar[Optional[bytes]] = None
-    connected_kings: ClassVar[bool] = False
-    one_king: ClassVar[bool] = True
-    captures_compulsory: ClassVar[bool] = False
+    tbw_suffix: Optional[str] = ".rtbw"
+    tbz_suffix: Optional[str] = ".rtbz"
+    tbw_magic: Optional[bytes] = b"\x71\xe8\x23\x5d"
+    tbz_magic: Optional[bytes] = b"\xd7\x66\x0c\xa5"
+    pawnless_tbw_suffix: Optional[str] = None
+    pawnless_tbz_suffix: Optional[str] = None
+    pawnless_tbw_magic: Optional[bytes] = None
+    pawnless_tbz_magic: Optional[bytes] = None
+    connected_kings: bool = False
+    one_king: bool = True
+    captures_compulsory: bool = False
 
     turn: Color
     """The side to move (``chess.WHITE`` or ``chess.BLACK``)."""
@@ -3817,13 +3819,20 @@ class Board(BaseBoard):
 
     def __eq__(self, board: object) -> bool:
         if isinstance(board, Board):
-            return (
-                self.halfmove_clock == board.halfmove_clock and
-                self.fullmove_number == board.fullmove_number and
-                type(self).uci_variant == type(board).uci_variant and
-                self._transposition_key() == board._transposition_key())
+            return hash(self) == hash(board)
+                
         else:
             return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash((
+            self.pawns, self.knights, self.bishops, self.rooks,
+            self.queens, self.kings,
+            self.occupied_co[WHITE], self.occupied_co[BLACK],
+            self.turn, self.castling_rights, self.ep_square,
+            self.halfmove_clock, self.fullmove_number,
+            type(self).uci_variant, self.chess960
+        ))
 
     def apply_transform(self, f: Callable[[Bitboard], Bitboard]) -> None:
         super().apply_transform(f)
